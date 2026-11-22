@@ -41,6 +41,20 @@ struct TempGauge: View {
     }
 }
 
+struct UsageRow: View {
+    let label: String
+    let percent: Int?
+    var detail: String? = nil
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(label).font(.caption.weight(.semibold)).frame(width: 34, alignment: .leading)
+            ProgressView(value: Double(percent ?? 0), total: 100).tint(percent.map { $0 >= 90 ? .red : $0 >= 70 ? .orange : .accentColor } ?? .gray)
+            Text(percent.map { "\($0)%" } ?? "—").font(.caption).monospacedDigit().frame(width: 36, alignment: .trailing)
+        }
+        .help(detail ?? "")
+    }
+}
+
 struct PopoverView: View {
     @ObservedObject var monitor: Monitor
     @ObservedObject var s = Settings.shared
@@ -67,6 +81,16 @@ struct PopoverView: View {
             } else {
                 Text(s.t(.noSensorHint)).font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(s.t(.usage)).font(.caption).foregroundStyle(.secondary)
+                UsageRow(label: s.t(.cpu), percent: monitor.cpu)
+                UsageRow(label: s.t(.gpu), percent: monitor.gpu)
+                UsageRow(label: s.t(.ram), percent: monitor.ram?.percent,
+                         detail: monitor.ram.map { String(format: "%.1f / %.0f GB", $0.usedGB, $0.totalGB) })
             }
 
             Divider()

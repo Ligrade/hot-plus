@@ -6,7 +6,7 @@ enum TempUnit: String, CaseIterable { case celsius, fahrenheit }
 enum BarStyle: String, CaseIterable { case iconAndTemp, tempOnly, iconOnly }
 enum AppLanguage: String, CaseIterable { case system, en, fr }
 
-let appVersion = "0.2"
+let appVersion = "0.3"
 let repoURL = URL(string: "https://github.com/Ligrade/hot-plus")!
 
 final class Settings: ObservableObject {

@@ -14,6 +14,7 @@ enum L {
     case loginNeedsApplications, loginNeedsApproval, loginError
     case tipNormal, tipWarm, tipHot, tipCritical
     case tipPNominal, tipPFair, tipPSerious, tipPCritical
+    case usage, cpu, gpu, ram
     case sectionDisplay, sectionGeneral, sourceHint
 
     func text(_ l: String) -> String {
@@ -65,6 +66,10 @@ enum L {
         case .tipPFair: return fr ? "Le système commence à s'adapter." : "The system is starting to adapt."
         case .tipPSerious: return fr ? "Performances réduites pour refroidir." : "Performance reduced to cool down."
         case .tipPCritical: return fr ? "Ralentissement maximal du Mac." : "Maximum slowdown in effect."
+        case .usage: return fr ? "Utilisation" : "Usage"
+        case .cpu: return "CPU"
+        case .gpu: return "GPU"
+        case .ram: return fr ? "RAM" : "RAM"
         case .sectionDisplay: return fr ? "Affichage" : "Display"
         case .sectionGeneral: return fr ? "Général" : "General"
         case .sourceHint: return fr ? "Mesure : capteurs du SoC/CPU, sans droits administrateur." : "Source: SoC/CPU sensors, no admin rights needed."

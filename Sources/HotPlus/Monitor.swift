@@ -4,9 +4,13 @@ import Combine
 /// Lit la température au rythme choisi et suit la pression thermique du système.
 final class Monitor: ObservableObject {
     @Published private(set) var reading: Reading?
+    @Published private(set) var cpu: Int?
+    @Published private(set) var gpu: Int?
+    @Published private(set) var ram: (percent: Int, usedGB: Double, totalGB: Double)?
     @Published private(set) var pressure = Pressure(ProcessInfo.processInfo.thermalState)
 
     private let sensor = ThermalSensor()
+    private let cpuUsage = CPUUsage()
     private var timer: Timer?
     private var bag = Set<AnyCancellable>()
 
@@ -28,5 +32,10 @@ final class Monitor: ObservableObject {
         timer = t
     }
 
-    private func refresh() { reading = sensor.read() }
+    private func refresh() {
+        reading = sensor.read()
+        cpu = cpuUsage.read() ?? cpu
+        gpu = GPUUsage.read()
+        ram = RAMUsage.read()
+    }
 }
