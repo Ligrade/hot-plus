@@ -40,6 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "settings": self?.showSettings()
                 default: if let b = self?.item.button { self?.clicked(b) }
                 }
+                // HOTPLUS_TOP=cpu|ram ouvre aussi la page Top 5.
+                if let t = ProcessInfo.processInfo.environment["HOTPLUS_TOP"], let m = self?.monitor {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { withAnimation(.easeInOut(duration: 0.3)) { m.topPage = t == "ram" ? .ram : .cpu } }
+                }
             }
         }
 

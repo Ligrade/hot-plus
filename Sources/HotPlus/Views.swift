@@ -45,13 +45,138 @@ struct UsageRow: View {
     let label: String
     let percent: Int?
     var detail: String? = nil
-    var body: some View {
+    var onTap: (() -> Void)? = nil
+    @State private var hover = false
+
+    private var row: some View {
         HStack(spacing: 10) {
             Text(label).font(.caption.weight(.semibold)).frame(width: 34, alignment: .leading)
             ProgressView(value: Double(percent ?? 0), total: 100).tint(percent.map { $0 >= 90 ? .red : $0 >= 70 ? .orange : .accentColor } ?? .gray)
             Text(percent.map { "\($0)%" } ?? "—").font(.caption).monospacedDigit().frame(width: 36, alignment: .trailing)
+            Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
+                .opacity(onTap == nil ? 0 : hover ? 1 : 0.5)
         }
+        .padding(.horizontal, 6).padding(.vertical, 3)
+    }
+
+    var body: some View {
+        Group {
+            if let onTap {
+                Button(action: onTap) {
+                    row
+                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(hover ? 0.07 : 0)))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .onHover { hover = $0 }
+            } else {
+                row
+            }
+        }
+        .padding(.horizontal, -6)
         .help(detail ?? "")
+    }
+}
+
+/// Page « Top 5 » qui glisse à la place de la page principale : les apps qui utilisent le plus le CPU ou la RAM, en direct.
+struct TopPage: View {
+    @ObservedObject var monitor: Monitor
+    let resource: AppEnergy.Resource
+    let back: () -> Void
+    @ObservedObject var s = Settings.shared
+    @State private var pulse = false
+
+    private func value(_ t: AppEnergy.Top) -> String {
+        switch resource {
+        case .cpu: return t.value < 0.5 ? "<1 %" : "\(Int(t.value.rounded())) %"
+        case .ram: return "\(t.value.formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button(action: back) {
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text(s.t(.usage))
+                }
+                .font(.callout).foregroundStyle(Color.accentColor).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(s.t(resource == .cpu ? .cpu : .ram)).font(.system(size: 28, weight: .semibold, design: .rounded))
+                    Text(s.t(.topSubtitle)).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                HStack(spacing: 5) {
+                    Circle().fill(Color.green).frame(width: 6, height: 6).opacity(pulse ? 1 : 0.35)
+                    Text(s.t(.live)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                }
+            }
+
+            if monitor.tops.isEmpty {
+                HStack(spacing: 8) {
+                    if !monitor.topReady { ProgressView().controlSize(.small) }
+                    Text(s.t(monitor.topReady ? .nothingToShow : .measuring)).font(.callout).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
+            } else {
+                let lead = max(monitor.tops.first?.value ?? 1, 0.001)
+                VStack(spacing: 4) {
+                    ForEach(monitor.tops) { t in
+                        TopRow(top: t, value: value(t), fraction: t.value / lead)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+            Text(s.t(resource == .cpu ? .cpuCaption : .ramCaption)).font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .animation(.easeOut(duration: 0.35), value: monitor.tops)
+        .onAppear { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } }
+    }
+}
+
+/// Une app du Top 5 : icône, nom, barre relative au premier, valeur. Un clic la met au premier plan.
+struct TopRow: View {
+    let top: AppEnergy.Top
+    let value: String
+    let fraction: Double
+    @State private var hover = false
+
+    var body: some View {
+        Button { NSRunningApplication(processIdentifier: top.pid)?.activate() } label: {
+            HStack(spacing: 10) {
+                if let icon = NSRunningApplication(processIdentifier: top.pid)?.icon {
+                    Image(nsImage: icon).resizable().frame(width: 24, height: 24)
+                } else {
+                    RoundedRectangle(cornerRadius: 5).fill(Color.secondary.opacity(0.2)).frame(width: 24, height: 24)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(top.name).font(.callout).lineLimit(1)
+                        Spacer(minLength: 6)
+                        Text(value).font(.callout.weight(.medium)).monospacedDigit()
+                    }
+                    GeometryReader { g in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.primary.opacity(0.08))
+                            Capsule().fill(Color.accentColor).frame(width: max(3, g.size.width * min(1, fraction)))
+                        }
+                    }
+                    .frame(height: 4)
+                }
+            }
+            .padding(.horizontal, 6).padding(.vertical, 5)
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.primary.opacity(hover ? 0.07 : 0)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, -6)
+        .onHover { hover = $0 }
     }
 }
 
@@ -81,7 +206,7 @@ struct HogNote: View {
                 Text(text).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
-                    metric("CPU", "\(hog.cpu) %", hot: hog.cpu >= 50)
+                    metric("CPU", hog.cpu < 1 ? "<1 %" : "\(hog.cpu) %", hot: Double(hog.cpu) * AppEnergy.cores >= 50) // ≥ la moitié d'un cœur
                     if let g = hog.gpu { metric("GPU", "\(g) %", hot: g >= 30) }
                     if let r = hog.ramGB {
                         metric(L.ram.text(lang), "\(r.formatted(.number.precision(.fractionLength(1)))) \(L.gigabytes.text(lang))", hot: r >= 4)
@@ -100,9 +225,29 @@ struct PopoverView: View {
     @ObservedObject var monitor: Monitor
     @ObservedObject var s = Settings.shared
 
+    private func open(_ r: AppEnergy.Resource?) {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) { monitor.topPage = r }
+    }
+
     var body: some View {
+        ZStack(alignment: .topLeading) {
+            main
+                .offset(x: monitor.topPage == nil ? 0 : -300)
+                .opacity(monitor.topPage == nil ? 1 : 0)
+            if let r = monitor.topPage {
+                TopPage(monitor: monitor, resource: r) { open(nil) }
+                    .padding(20)
+                    .frame(width: 300).frame(maxHeight: .infinity, alignment: .top)
+                    .transition(.move(edge: .trailing))
+            }
+        }
+        .frame(width: 300)
+        .clipped()
+    }
+
+    private var main: some View {
         let level = monitor.level
-        VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 12) {
                 Image(nsImage: level?.icon(size: 56) ?? monitor.pressure.icon(size: 56)).resizable().frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
@@ -128,10 +273,10 @@ struct PopoverView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(s.t(.usage)).font(.caption).foregroundStyle(.secondary)
-                UsageRow(label: s.t(.cpu), percent: monitor.cpu)
-                UsageRow(label: s.t(.gpu), percent: monitor.gpu)
+                UsageRow(label: s.t(.cpu), percent: monitor.cpu) { open(.cpu) }
                 UsageRow(label: s.t(.ram), percent: monitor.ram?.percent,
-                         detail: monitor.ram.map { String(format: "%.1f / %.0f GB", $0.usedGB, $0.totalGB) })
+                         detail: monitor.ram.map { String(format: "%.1f / %.0f GB", $0.usedGB, $0.totalGB) }) { open(.ram) }
+                UsageRow(label: s.t(.gpu), percent: monitor.gpu)
             }
 
             Divider()

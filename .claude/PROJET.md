@@ -21,6 +21,8 @@ App macOS légère de barre de menus qui affiche la température du Mac (°C/°F
 - 2026-11-23 : signalement discret en bas du popover quand une app consomme beaucoup (≥ 40 % d'un cœur, app + ses processus d'aide), mesuré seulement popover ouvert.
 - 2026-11-23 : détection affinée par workflow (4 agents Opus) : énergie par coalition du noyau (CPU+GPU+ANE+réveils, comme l'onglet Énergie), outil réel nommé (« Claude Code (dans Claude) »), lissage + hystérésis (apparaît à 1,5 W, disparaît sous 0,9 W). Installée dans /Applications.
 - 2026-11-23 : la note détaille ce que l'app consomme : CPU (% d'un cœur), GPU (%), RAM (Go, app + ses processus), la valeur qui pèse en orange.
+- 2026-11-23 : ordre CPU, RAM, GPU. Clic sur CPU ou RAM → page « Top 5 » qui glisse dans le popover, valeurs en direct (2 s), retour par « ‹ Utilisation ». Plus de top GPU, plus de mini-menu.
+- 2026-11-23 : CPU par app affiché en % de tout le processeur (même base que la ligne CPU : 113 % d'un cœur → 11 %), dans le Top 5 et dans la note.
 
 ## Règles du projet
 - Pas de nom de famille ni d'email de Driss dans le code ou les métadonnées (auteur : Ligrade).

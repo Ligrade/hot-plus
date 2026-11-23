@@ -12,12 +12,14 @@ final class AppEnergy {
         let tool: String?  // outil réel lancé dedans (terminal, IDE), ex. « Claude Code »
         let pid: pid_t     // app hôte, pour l'icône
         var watts: Double  // estimation lissée, hors égalité : la valeur bouge sans cesse
-        var cpu: Int = 0       // % d'un cœur, lissé
+        var cpu: Int = 0       // % de tout le processeur (comme la ligne CPU), lissé
         var gpu: Int? = nil    // % du GPU, lissé (nil sans coalitions)
         var ramGB: Double? = nil // mémoire de l'app et de ses processus
         static func == (a: Hog, b: Hog) -> Bool { a.pid == b.pid && a.name == b.name && a.tool == b.tool }
     }
 
+    /// Nombre de cœurs : les % d'un cœur sont divisés par ce nombre pour être sur la même base que la ligne CPU.
+    static let cores = Double(max(1, ProcessInfo.processInfo.activeProcessorCount))
     /// Cadence de mesure, popover ouvert.
     static let interval: TimeInterval = 2
     /// Seuils en mW, avec hystérésis. `yes` sur un cœur P ≈ 5 W ; 40 % d'un cœur ≈ 1,5 W (calibré sur un Mac M).
@@ -110,7 +112,7 @@ final class AppEnergy {
         streak = top.value >= Self.enterMW ? (top.key, streak?.pid == top.key ? streak!.n + 1 : 1) : nil
         var candidate = Hog(name: app.localizedName ?? "?", tool: tool, pid: top.key, watts: top.value / 1000)
         if let u = useEMA[top.key] {
-            candidate.cpu = Int(u.cpu.rounded())
+            candidate.cpu = Int((u.cpu / Self.cores).rounded())
             candidate.gpu = u.gpu.map { Int(min(100, $0).rounded()) }
         }
         if let s = shown, let e = ema[s.pid], e >= Self.exitMW, apps[s.pid] != nil {
@@ -118,7 +120,7 @@ final class AppEnergy {
             if top.key != s.pid, top.value > e * 1.5, (streak?.n ?? 0) >= 2 { shown = candidate }
             else if top.key == s.pid { shown = candidate } else {
                 shown?.watts = e / 1000
-                if let u = useEMA[s.pid] { shown?.cpu = Int(u.cpu.rounded()); shown?.gpu = u.gpu.map { Int(min(100, $0).rounded()) } }
+                if let u = useEMA[s.pid] { shown?.cpu = Int((u.cpu / Self.cores).rounded()); shown?.gpu = u.gpu.map { Int(min(100, $0).rounded()) } }
             }
         } else if let st = streak, st.n >= 2 || top.value >= 2 * Self.enterMW {
             shown = candidate
@@ -291,6 +293,59 @@ final class AppEnergy {
             if apps[p] != nil { return p }
         }
         return nil
+    }
+
+    // MARK: Top 5
+
+    enum Resource { case cpu, ram }
+    var ready: Bool { lastTime > 0 && !useEMA.isEmpty }
+    struct Top: Identifiable, Equatable { let pid: pid_t; let name: String; let value: Double; var id: pid_t { pid } }
+
+    /// Les apps qui consomment le plus une ressource. CPU : % de tout le processeur, moyenne lissée des dernières mesures
+    /// (vide pendant les 2 premières secondes). RAM : lue à la demande, en Go.
+    func top(_ r: Resource, count: Int = 5) -> [Top] {
+        let me = getpid()
+        var apps: [pid_t: NSRunningApplication] = [:]
+        for a in NSWorkspace.shared.runningApplications where a.activationPolicy != .prohibited && a.processIdentifier > 0 && a.processIdentifier != me {
+            apps[a.processIdentifier] = a
+        }
+        let values: [pid_t: Double]
+        switch r {
+        case .cpu: values = useEMA.mapValues { $0.cpu }
+        case .ram: values = ramByApp(apps: apps)
+        }
+        let minimum = r == .ram ? 0.01 : 0.5 // on écarte ce qui ne consomme rien
+        let scale = r == .cpu ? Self.cores : 1
+        return values.filter { $0.value >= minimum && apps[$0.key] != nil }
+            .sorted { $0.value > $1.value }.prefix(count)
+            .map { Top(pid: $0.key, name: apps[$0.key]?.localizedName ?? "?", value: $0.value / scale) }
+    }
+
+    /// Mémoire par app en Go : chaque processus compte pour l'app de sa coalition (ou son app responsable en secours).
+    private func ramByApp(apps: [pid_t: NSRunningApplication]) -> [pid_t: Double] {
+        var appOf: [UInt64: pid_t] = [:]
+        if cru != nil, layoutOK {
+            // Même règle que la mesure d'énergie : apps « regular » d'abord, puis par pid.
+            let sorted = apps.values.sorted {
+                let r0 = $0.activationPolicy == .regular ? 0 : 1, r1 = $1.activationPolicy == .regular ? 0 : 1
+                return r0 != r1 ? r0 < r1 : $0.processIdentifier < $1.processIdentifier
+            }
+            for a in sorted { if let cid = Self.coalitionID(a.processIdentifier), appOf[cid] == nil { appOf[cid] = a.processIdentifier } }
+        }
+        var out: [pid_t: Double] = [:]
+        for pid in Self.allPids() where pid > 0 {
+            let owner: pid_t?
+            if apps[pid] != nil { owner = pid }
+            else if !appOf.isEmpty { owner = Self.coalitionID(pid).flatMap { appOf[$0] } }
+            else { owner = self.owner(of: pid, apps: apps) }
+            guard let owner else { continue }
+            var info = rusage_info_v6()
+            let r = withUnsafeMutablePointer(to: &info) {
+                $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(pid, RUSAGE_INFO_V6, $0) }
+            }
+            if r == 0 { out[owner, default: 0] += Double(info.ri_phys_footprint) / 1_073_741_824 }
+        }
+        return out
     }
 
     /// Mémoire (empreinte physique, comme le Moniteur d'activité) de l'app et des processus de sa coalition, en Go.

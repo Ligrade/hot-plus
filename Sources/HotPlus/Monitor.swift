@@ -8,6 +8,10 @@ final class Monitor: ObservableObject {
     @Published private(set) var gpu: Int?
     @Published private(set) var ram: (percent: Int, usedGB: Double, totalGB: Double)?
     @Published private(set) var hog: AppEnergy.Hog?
+    /// Page « Top 5 » affichée dans le popover (nil : page principale). Les valeurs se mettent à jour toutes les 2 s.
+    @Published var topPage: AppEnergy.Resource? { didSet { if topPage != oldValue { tops = []; refreshTop() } } }
+    @Published private(set) var tops: [AppEnergy.Top] = []
+    @Published private(set) var topReady = false
     @Published private(set) var pressure = Pressure(ProcessInfo.processInfo.thermalState)
 
     private let sensor = ThermalSensor()
@@ -22,6 +26,7 @@ final class Monitor: ObservableObject {
             hogTimer?.invalidate(); hogTimer = nil
             energy.reset()
             hog = nil
+            topPage = nil
             guard watchApps else { return }
             _ = energy.read() // première mesure, la suivante donne l'écart
             let t = Timer(timeInterval: AppEnergy.interval, repeats: true) { [weak self] _ in self?.updateHog() }
@@ -31,10 +36,18 @@ final class Monitor: ObservableObject {
         }
     }
 
+    private func refreshTop() {
+        guard let r = topPage else { return }
+        topReady = r == .ram || energy.ready
+        let t = energy.top(r)
+        if t != tops { tops = t }
+    }
+
     private func updateHog() {
         guard watchApps else { return }
         let h = energy.read()
         hog = h // l'égalité ignore la valeur : l'animation ne repart que si l'app change
+        refreshTop()
     }
     private var timer: Timer?
     private var bag = Set<AnyCancellable>()
