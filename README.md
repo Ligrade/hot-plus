@@ -10,11 +10,14 @@
 </p>
 
 <p align="center">
-  <code>v1.1.1</code> · macOS 13+ · Apple Silicon only · Swift · Open source, free for use · By Ligrade
+  <a href="https://github.com/Ligrade/hot-plus/releases/latest"><img src="https://img.shields.io/github/v/release/Ligrade/hot-plus?label=Download%20for%20Mac&amp;style=for-the-badge&amp;logo=apple&amp;logoColor=white&amp;color=ff7a1a" alt="Download Hot + for Mac" height="56"></a>
+</p>
+<p align="center">
+  <sub>Free · .zip · macOS 13+ · Apple Silicon · <a href="#install">How to install</a> · <a href="#installation">Comment installer</a></sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Ligrade/hot-plus/releases/latest"><img src="https://img.shields.io/github/v/release/Ligrade/hot-plus?label=Download&amp;style=for-the-badge&amp;logo=apple&amp;color=ff7a1a" alt="Download Hot +"></a>
+  <code>v1.1.1</code> · macOS 13+ · Apple Silicon only · Swift · Open source, free for use · By Ligrade
 </p>
 
 <p align="center">
@@ -34,6 +37,12 @@
 ## English
 
 Hot + is a tiny menu-bar app for macOS. It shows the temperature of your Mac, tells you whether it is normal, displays the system's thermal pressure, and shows your CPU, GPU and RAM usage. No Dock icon, no dependencies, no `sudo`.
+
+### Install
+
+1. **[Download the latest Hot-Plus .zip](https://github.com/Ligrade/hot-plus/releases/latest)** and unzip it.
+2. Move **Hot +.app** to **Applications**.
+3. First launch: the app is not notarized, so right-click it → **Open** → **Open**. If macOS still blocks it: System Settings → Privacy & Security → **Open Anyway**.
 
 ### Features
 
@@ -103,6 +112,12 @@ Hot + reads the IOKit HID sensors of the chip (`PMU tdie*`, the SoC / CPU dies) 
 ## Français
 
 Hot + est une petite app de barre de menus pour macOS. Elle affiche la température de votre Mac, indique si elle est normale, montre la pression thermique du système et l'utilisation du CPU, du GPU et de la RAM. Pas d'icône dans le Dock, aucune dépendance, pas de `sudo`.
+
+### Installation
+
+1. **[Téléchargez le dernier .zip de Hot +](https://github.com/Ligrade/hot-plus/releases/latest)** et décompressez-le.
+2. Glissez **Hot +.app** dans **Applications**.
+3. Premier lancement : l'app n'est pas notarisée, faites clic droit → **Ouvrir** → **Ouvrir**. Si macOS bloque encore : Réglages Système → Confidentialité et sécurité → **Ouvrir quand même**.
 
 ### Fonctionnalités
 
