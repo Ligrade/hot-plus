@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <code>v1.1</code> · macOS 13+ · Apple Silicon only · Swift · Open source, free for use · By Ligrade
+  <code>v1.1.1</code> · macOS 13+ · Apple Silicon only · Swift · Open source, free for use · By Ligrade
 </p>
 
 ---
@@ -147,5 +147,5 @@ Hot + lit les capteurs IOKit HID de la puce (`PMU tdie*`, SoC / CPU) et affiche 
 ---
 
 <p align="center">
-  <strong>Hot + v1.1 · By Ligrade</strong> · <a href="https://github.com/Ligrade/hot-plus">github.com/Ligrade/hot-plus</a>
+  <strong>Hot + v1.1.1 · By Ligrade</strong> · <a href="https://github.com/Ligrade/hot-plus">github.com/Ligrade/hot-plus</a>
 </p>

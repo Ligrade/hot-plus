@@ -23,6 +23,9 @@ App macOS légère de barre de menus qui affiche la température du Mac (°C/°F
 - 2026-11-23 : la note détaille ce que l'app consomme : CPU (% d'un cœur), GPU (%), RAM (Go, app + ses processus), la valeur qui pèse en orange.
 - 2026-11-23 : ordre CPU, RAM, GPU. Clic sur CPU ou RAM → page « Top 5 » qui glisse dans le popover, valeurs en direct (2 s), retour par « ‹ Utilisation ». Plus de top GPU, plus de mini-menu.
 - 2026-11-23 : CPU par app affiché en % de tout le processeur (même base que la ligne CPU : 113 % d'un cœur → 11 %), dans le Top 5 et dans la note.
+- 2026-11-23 : les apps du Top 5 ne font rien au clic pour l'instant (avant : mise au premier plan, qui fermait le popover).
+- 2026-11-23 : la note « consomme beaucoup » suit ses valeurs CPU, GPU, RAM en direct (toutes les 2 s), avec un point vert qui pulse.
+- 2026-11-23 : en haut à droite des pages Top 5, la capacité restante (CPU libre en %, RAM disponible en Go).
 
 ## Règles du projet
 - Pas de nom de famille ni d'email de Driss dans le code ou les métadonnées (auteur : Ligrade).

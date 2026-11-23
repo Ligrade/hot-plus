@@ -86,6 +86,13 @@ struct TopPage: View {
     @ObservedObject var s = Settings.shared
     @State private var pulse = false
 
+    private var free: String? {
+        switch resource {
+        case .cpu: return monitor.cpu.map { "\(max(0, 100 - $0)) %" }
+        case .ram: return monitor.ram.map { "\(max(0, $0.totalGB - $0.usedGB).formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
+        }
+    }
+
     private func value(_ t: AppEnergy.Top) -> String {
         switch resource {
         case .cpu: return t.value < 0.5 ? "<1 %" : "\(Int(t.value.rounded())) %"
@@ -110,9 +117,16 @@ struct TopPage: View {
                     Text(s.t(.topSubtitle)).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                HStack(spacing: 5) {
-                    Circle().fill(Color.green).frame(width: 6, height: 6).opacity(pulse ? 1 : 0.35)
-                    Text(s.t(.live)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Circle().fill(Color.green).frame(width: 6, height: 6).opacity(pulse ? 1 : 0.35)
+                        Text(s.t(.live)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                    // Capacité qui reste : CPU libre en %, RAM disponible en Go.
+                    if let free {
+                        Text(free).font(.system(size: 17, weight: .semibold, design: .rounded)).monospacedDigit()
+                        Text(s.t(.remaining)).font(.caption2).foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -140,15 +154,13 @@ struct TopPage: View {
     }
 }
 
-/// Une app du Top 5 : icône, nom, barre relative au premier, valeur. Un clic la met au premier plan.
+/// Une app du Top 5 : icône, nom, barre relative au premier, valeur (pas d'action au clic pour l'instant).
 struct TopRow: View {
     let top: AppEnergy.Top
     let value: String
     let fraction: Double
-    @State private var hover = false
 
     var body: some View {
-        Button { NSRunningApplication(processIdentifier: top.pid)?.activate() } label: {
             HStack(spacing: 10) {
                 if let icon = NSRunningApplication(processIdentifier: top.pid)?.icon {
                     Image(nsImage: icon).resizable().frame(width: 24, height: 24)
@@ -170,13 +182,7 @@ struct TopRow: View {
                     .frame(height: 4)
                 }
             }
-            .padding(.horizontal, 6).padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.primary.opacity(hover ? 0.07 : 0)))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, -6)
-        .onHover { hover = $0 }
+            .padding(.vertical, 5)
     }
 }
 
@@ -185,6 +191,7 @@ struct HogNote: View {
     let hog: AppEnergy.Hog
     let text: String
     let lang: String
+    @State private var pulse = false
 
     /// Une mesure ; en orange quand c'est elle qui pèse.
     private func metric(_ label: String, _ value: String, hot: Bool) -> some View {
@@ -206,6 +213,8 @@ struct HogNote: View {
                 Text(text).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
+                    Circle().fill(Color.green).frame(width: 5, height: 5).opacity(pulse ? 1 : 0.3)
+                        .help(L.live.text(lang))
                     metric("CPU", hog.cpu < 1 ? "<1 %" : "\(hog.cpu) %", hot: Double(hog.cpu) * AppEnergy.cores >= 50) // ≥ la moitié d'un cœur
                     if let g = hog.gpu { metric("GPU", "\(g) %", hot: g >= 30) }
                     if let r = hog.ramGB {
@@ -218,6 +227,7 @@ struct HogNote: View {
         .padding(.horizontal, 10).padding(.vertical, 7)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.orange.opacity(0.12)))
         .help("≈ \(hog.watts.formatted(.number.precision(.fractionLength(1)))) W")
+        .onAppear { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } }
     }
 }
 
@@ -297,7 +307,7 @@ struct PopoverView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.25), value: monitor.hog)
+        .animation(.easeOut(duration: 0.25), value: monitor.hog?.id)
         .padding(20).frame(width: 300)
     }
 }

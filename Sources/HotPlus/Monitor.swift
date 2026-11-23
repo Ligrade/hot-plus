@@ -46,7 +46,7 @@ final class Monitor: ObservableObject {
     private func updateHog() {
         guard watchApps else { return }
         let h = energy.read()
-        hog = h // l'égalité ignore la valeur : l'animation ne repart que si l'app change
+        hog = h // valeurs mises à jour toutes les 2 s
         refreshTop()
     }
     private var timer: Timer?

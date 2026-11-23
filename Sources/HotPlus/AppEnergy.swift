@@ -15,7 +15,8 @@ final class AppEnergy {
         var cpu: Int = 0       // % de tout le processeur (comme la ligne CPU), lissé
         var gpu: Int? = nil    // % du GPU, lissé (nil sans coalitions)
         var ramGB: Double? = nil // mémoire de l'app et de ses processus
-        static func == (a: Hog, b: Hog) -> Bool { a.pid == b.pid && a.name == b.name && a.tool == b.tool }
+        /// Identité de la note (app + outil) : l'animation d'apparition ne repart que si elle change, les valeurs suivent en direct.
+        var id: String { "\(pid)|\(name)|\(tool ?? "")" }
     }
 
     /// Nombre de cœurs : les % d'un cœur sont divisés par ce nombre pour être sur la même base que la ligne CPU.

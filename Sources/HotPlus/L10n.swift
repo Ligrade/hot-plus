@@ -16,7 +16,7 @@ enum L {
     case tipPNominal, tipPFair, tipPSerious, tipPCritical
     case usage, cpu, gpu, ram
     case appHog(String), appHogTool(String, String), gigabytes
-    case topSubtitle, live, measuring, nothingToShow, cpuCaption, ramCaption
+    case topSubtitle, live, remaining, measuring, nothingToShow, cpuCaption, ramCaption
     case sectionDisplay, sectionGeneral, sourceHint
 
     func text(_ l: String) -> String {
@@ -71,6 +71,7 @@ enum L {
         case .usage: return fr ? "Utilisation" : "Usage"
         case .topSubtitle: return fr ? "Les 5 apps qui en utilisent le plus" : "The 5 apps using the most"
         case .live: return fr ? "En direct" : "Live"
+        case .remaining: return fr ? "restant" : "left"
         case .cpuCaption: return fr ? "En % de tout le processeur, mis à jour toutes les 2 s." : "As % of the whole processor, updated every 2 s."
         case .ramCaption: return fr ? "Mémoire de chaque app et de ses processus, mise à jour toutes les 2 s." : "Memory of each app and its processes, updated every 2 s."
         case .measuring: return fr ? "Mesure en cours…" : "Measuring…"
