@@ -18,6 +18,10 @@ App macOS légère de barre de menus qui affiche la température du Mac (°C/°F
 ## Décisions de Driss
 - 2026-11-22 : nom « Hot + », v0.1, auteur Ligrade, dépôt GitHub « hot-plus », FR + EN, rafraîchissement 1/3/5/10 s, clic droit : À propos / Réglages / Quitter.
 
+- 2026-11-23 : signalement discret en bas du popover quand une app consomme beaucoup (≥ 40 % d'un cœur, app + ses processus d'aide), mesuré seulement popover ouvert.
+- 2026-11-23 : détection affinée par workflow (4 agents Opus) : énergie par coalition du noyau (CPU+GPU+ANE+réveils, comme l'onglet Énergie), outil réel nommé (« Claude Code (dans Claude) »), lissage + hystérésis (apparaît à 1,5 W, disparaît sous 0,9 W). Installée dans /Applications.
+- 2026-11-23 : la note détaille ce que l'app consomme : CPU (% d'un cœur), GPU (%), RAM (Go, app + ses processus), la valeur qui pèse en orange.
+
 ## Règles du projet
 - Pas de nom de famille ni d'email de Driss dans le code ou les métadonnées (auteur : Ligrade).
 - Pas de dépendance externe ; consommation minimale.

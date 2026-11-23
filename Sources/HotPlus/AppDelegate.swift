@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         popover.behavior = .transient
+        popover.delegate = self
         popover.contentViewController = NSHostingController(rootView: PopoverView(monitor: monitor))
 
         monitor.objectWillChange.merge(with: settings.objectWillChange)
@@ -82,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else if popover.isShown {
             popover.performClose(nil)
         } else {
+            monitor.watchApps = true
             popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
@@ -108,4 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         w.makeKeyAndOrderFront(nil)
         return w
     }
+}
+
+extension AppDelegate: NSPopoverDelegate {
+    func popoverDidClose(_ notification: Notification) { monitor.watchApps = false }
 }

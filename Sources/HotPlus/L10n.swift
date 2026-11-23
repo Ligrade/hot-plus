@@ -15,6 +15,7 @@ enum L {
     case tipNormal, tipWarm, tipHot, tipCritical
     case tipPNominal, tipPFair, tipPSerious, tipPCritical
     case usage, cpu, gpu, ram
+    case appHog(String), appHogTool(String, String), gigabytes
     case sectionDisplay, sectionGeneral, sourceHint
 
     func text(_ l: String) -> String {
@@ -67,6 +68,9 @@ enum L {
         case .tipPSerious: return fr ? "Performances réduites pour refroidir." : "Performance reduced to cool down."
         case .tipPCritical: return fr ? "Ralentissement maximal du Mac." : "Maximum slowdown in effect."
         case .usage: return fr ? "Utilisation" : "Usage"
+        case .gigabytes: return fr ? "Go" : "GB"
+        case .appHog(let n): return fr ? "\(n) consomme beaucoup en ce moment." : "\(n) is using a lot of energy right now."
+        case .appHogTool(let t, let a): return fr ? "\(t) (dans \(a)) consomme beaucoup en ce moment." : "\(t) (in \(a)) is using a lot of energy right now."
         case .cpu: return "CPU"
         case .gpu: return "GPU"
         case .ram: return fr ? "RAM" : "RAM"

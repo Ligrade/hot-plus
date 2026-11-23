@@ -55,6 +55,47 @@ struct UsageRow: View {
     }
 }
 
+/// Petit signalement discret : l'app la plus gourmande du moment.
+struct HogNote: View {
+    let hog: AppEnergy.Hog
+    let text: String
+    let lang: String
+
+    /// Une mesure ; en orange quand c'est elle qui pèse.
+    private func metric(_ label: String, _ value: String, hot: Bool) -> some View {
+        HStack(spacing: 3) {
+            Text(label).foregroundStyle(.secondary)
+            Text(value).monospacedDigit().fontWeight(hot ? .semibold : .regular).foregroundStyle(hot ? Color.orange : .primary)
+        }
+        .font(.caption2)
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let icon = NSRunningApplication(processIdentifier: hog.pid)?.icon {
+                Image(nsImage: icon).resizable().frame(width: 18, height: 18)
+            } else {
+                Image(systemName: "bolt.fill").foregroundStyle(.orange).frame(width: 18, height: 18)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(text).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    metric("CPU", "\(hog.cpu) %", hot: hog.cpu >= 50)
+                    if let g = hog.gpu { metric("GPU", "\(g) %", hot: g >= 30) }
+                    if let r = hog.ramGB {
+                        metric(L.ram.text(lang), "\(r.formatted(.number.precision(.fractionLength(1)))) \(L.gigabytes.text(lang))", hot: r >= 4)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.orange.opacity(0.12)))
+        .help("≈ \(hog.watts.formatted(.number.precision(.fractionLength(1)))) W")
+    }
+}
+
 struct PopoverView: View {
     @ObservedObject var monitor: Monitor
     @ObservedObject var s = Settings.shared
@@ -105,7 +146,13 @@ struct PopoverView: View {
                 }
                 Spacer(minLength: 0)
             }
+
+            if let hog = monitor.hog {
+                HogNote(hog: hog, text: s.t(hog.tool.map { .appHogTool($0, hog.name) } ?? .appHog(hog.name)), lang: s.lang)
+                    .transition(.opacity)
+            }
         }
+        .animation(.easeOut(duration: 0.25), value: monitor.hog)
         .padding(20).frame(width: 300)
     }
 }
