@@ -14,6 +14,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Ligrade/hot-plus/releases/latest"><img src="https://img.shields.io/github/v/release/Ligrade/hot-plus?label=Download&amp;style=for-the-badge&amp;logo=apple&amp;color=ff7a1a" alt="Download Hot +"></a>
+</p>
+
+<p align="center">
   <img src="assets/screenshots/popover.png" alt="Popover" width="260">
   <img src="assets/screenshots/note.png" alt="App using a lot of energy" width="260">
 </p>
