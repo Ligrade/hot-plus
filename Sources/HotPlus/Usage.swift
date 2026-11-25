@@ -18,6 +18,17 @@ enum GPUUsage {
     }
 }
 
+/// Swap utilisé et alloué, en Go (fichiers d'échange sur le SSD interne).
+enum SwapUsage {
+    static func read() -> (usedGB: Double, totalGB: Double)? {
+        var x = xsw_usage()
+        var size = MemoryLayout<xsw_usage>.size
+        guard sysctlbyname("vm.swapusage", &x, &size, nil, 0) == 0 else { return nil }
+        let gb = 1_073_741_824.0
+        return (Double(x.xsu_used) / gb, Double(x.xsu_total) / gb)
+    }
+}
+
 /// Mémoire vive utilisée (comme le Moniteur d'activité : app + câblée + compressée).
 enum RAMUsage {
     static func read() -> (percent: Int, usedGB: Double, totalGB: Double)? {

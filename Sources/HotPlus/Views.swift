@@ -86,10 +86,12 @@ struct TopPage: View {
     @ObservedObject var s = Settings.shared
     @State private var pulse = false
 
+    private func gb(_ v: Double) -> String { "\(v.formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
+
     private var free: String? {
         switch resource {
-        case .cpu: return monitor.cpu.map { "\(max(0, 100 - $0)) %" }
-        case .ram: return monitor.ram.map { "\(max(0, $0.totalGB - $0.usedGB).formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
+        case .cpu: return (monitor.liveCPU ?? monitor.cpu).map { "\(max(0, 100 - $0)) %" }
+        case .ram: return (monitor.liveRAM ?? monitor.ram).map { "\(max(0, $0.totalGB - $0.usedGB).formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
         }
     }
 
@@ -126,6 +128,13 @@ struct TopPage: View {
                     if let free {
                         Text(free).font(.system(size: 17, weight: .semibold, design: .rounded)).monospacedDigit()
                         Text(s.t(.remaining)).font(.caption2).foregroundStyle(.secondary)
+                    }
+                    // Swap du Mac (page RAM) : en orange quand plus de la moitié de la RAM part sur le disque.
+                    if resource == .ram, let sw = monitor.swap, sw.usedGB >= 0.05 {
+                        Text(s.t(.swap("\(gb(sw.usedGB))")))
+                            .font(.caption2.weight(.semibold)).monospacedDigit()
+                            .foregroundStyle(sw.usedGB >= (monitor.ram?.totalGB ?? 16) / 2 ? Color.orange : .secondary)
+                            .padding(.top, 2)
                     }
                 }
             }
@@ -287,6 +296,10 @@ struct PopoverView: View {
                 UsageRow(label: s.t(.ram), percent: monitor.ram?.percent,
                          detail: monitor.ram.map { String(format: "%.1f / %.0f GB", $0.usedGB, $0.totalGB) }) { open(.ram) }
                 UsageRow(label: s.t(.gpu), percent: monitor.gpu)
+                if let hog = monitor.hog {
+                    HogNote(hog: hog, text: s.t(hog.tool.map { .appHogTool($0, hog.name) } ?? .appHog(hog.name)), lang: s.lang)
+                        .transition(.opacity)
+                }
             }
 
             Divider()
@@ -300,11 +313,6 @@ struct PopoverView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-            }
-
-            if let hog = monitor.hog {
-                HogNote(hog: hog, text: s.t(hog.tool.map { .appHogTool($0, hog.name) } ?? .appHog(hog.name)), lang: s.lang)
-                    .transition(.opacity)
             }
         }
         .animation(.easeOut(duration: 0.25), value: monitor.hog?.id)

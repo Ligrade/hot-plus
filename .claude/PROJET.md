@@ -27,6 +27,7 @@ App macOS légère de barre de menus qui affiche la température du Mac (°C/°F
 - 2026-11-23 : la note « consomme beaucoup » suit ses valeurs CPU, GPU, RAM en direct (toutes les 2 s), avec un point vert qui pulse.
 - 2026-11-23 : en haut à droite des pages Top 5, la capacité restante (CPU libre en %, RAM disponible en Go).
 - 2026-11-23 : première release GitHub v1.1.1 (zip de l'app, signature ad hoc, non notarisée) : https://github.com/Ligrade/hot-plus/releases/tag/v1.1.1
+- 2026-11-23 : page RAM : swap du Mac en haut à droite (orange au-delà de la moitié de la RAM). Pas de swap par app : non mesurable sans droits admin (l'estimation empreinte − résident comptait la mémoire GPU comme hors RAM, retirée).
 
 ## Règles du projet
 - Pas de nom de famille ni d'email de Driss dans le code ou les métadonnées (auteur : Ligrade).

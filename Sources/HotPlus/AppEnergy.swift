@@ -62,10 +62,13 @@ final class AppEnergy {
     private var toolCache: [pid_t: (start: UInt64, tool: String?)] = [:]
     private var shown: Hog?
     private var streak: (pid: pid_t, n: Int)?
+    private var calm = 0 // mesures de suite sous le seuil bas pour l'app affichée
+    /// L'app reste affichée jusqu'à 5 mesures (10 s) de suite sous le seuil bas : pas de clignotement sur un creux.
+    private static let holdCount = 5
 
     func reset() {
         lastCoal = [:]; lastProc = [:]; lastToolProc = [:]; lastTime = 0
-        ema = [:]; use = [:]; useEMA = [:]; toolEMA = [:]; toolCache = [:]; shown = nil; streak = nil
+        ema = [:]; use = [:]; useEMA = [:]; toolEMA = [:]; toolCache = [:]; shown = nil; streak = nil; calm = 0
     }
 
     /// Fait une mesure et renvoie l'app à signaler (nil sous le seuil ou à la première lecture).
@@ -116,17 +119,18 @@ final class AppEnergy {
             candidate.cpu = Int((u.cpu / Self.cores).rounded())
             candidate.gpu = u.gpu.map { Int(min(100, $0).rounded()) }
         }
-        if let s = shown, let e = ema[s.pid], e >= Self.exitMW, apps[s.pid] != nil {
+        if let s = shown, apps[s.pid] != nil, let e = ema[s.pid], e >= Self.exitMW || calm < Self.holdCount {
+            calm = e >= Self.exitMW ? 0 : calm + 1
             // On garde l'app signalée, sauf si une autre la dépasse nettement.
-            if top.key != s.pid, top.value > e * 1.5, (streak?.n ?? 0) >= 2 { shown = candidate }
+            if top.key != s.pid, top.value > e * 1.5, (streak?.n ?? 0) >= 2 { shown = candidate; calm = 0 }
             else if top.key == s.pid { shown = candidate } else {
                 shown?.watts = e / 1000
                 if let u = useEMA[s.pid] { shown?.cpu = Int((u.cpu / Self.cores).rounded()); shown?.gpu = u.gpu.map { Int(min(100, $0).rounded()) } }
             }
         } else if let st = streak, st.n >= 2 || top.value >= 2 * Self.enterMW {
-            shown = candidate
+            shown = candidate; calm = 0
         } else {
-            shown = nil
+            shown = nil; calm = 0
         }
 
         // Mémoire : seulement pour l'app affichée (une passe sur les processus).
@@ -300,7 +304,10 @@ final class AppEnergy {
 
     enum Resource { case cpu, ram }
     var ready: Bool { lastTime > 0 && !useEMA.isEmpty }
-    struct Top: Identifiable, Equatable { let pid: pid_t; let name: String; let value: Double; var id: pid_t { pid } }
+    struct Top: Identifiable, Equatable {
+        let pid: pid_t; let name: String; let value: Double
+        var id: pid_t { pid }
+    }
 
     /// Les apps qui consomment le plus une ressource. CPU : % de tout le processeur, moyenne lissée des dernières mesures
     /// (vide pendant les 2 premières secondes). RAM : lue à la demande, en Go.
@@ -323,6 +330,7 @@ final class AppEnergy {
     }
 
     /// Mémoire par app en Go : chaque processus compte pour l'app de sa coalition (ou son app responsable en secours).
+    /// Empreinte mémoire, comme la colonne Mémoire du Moniteur d'activité (compressé, swap et mémoire GPU compris).
     private func ramByApp(apps: [pid_t: NSRunningApplication]) -> [pid_t: Double] {
         var appOf: [UInt64: pid_t] = [:]
         if cru != nil, layoutOK {
