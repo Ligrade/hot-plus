@@ -18,6 +18,18 @@ enum GPUUsage {
     }
 }
 
+/// Puissance totale consommée par le Mac, en watts (télémétrie de la batterie, lisible sans droits admin). nil sur un Mac sans batterie.
+enum SystemPower {
+    static func read() -> Double? {
+        let svc = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        guard svc != 0 else { return nil }
+        defer { IOObjectRelease(svc) }
+        guard let t = IORegistryEntryCreateCFProperty(svc, "PowerTelemetryData" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? [String: Any],
+              let mW = (t["SystemLoad"] as? NSNumber)?.doubleValue, mW > 0, mW < 500_000 else { return nil }
+        return mW / 1000
+    }
+}
+
 /// Swap utilisé et alloué, en Go (fichiers d'échange sur le SSD interne).
 enum SwapUsage {
     static func read() -> (usedGB: Double, totalGB: Double)? {

@@ -300,7 +300,7 @@ final class AppEnergy {
         return nil
     }
 
-    // MARK: Top 5
+    // MARK: Top 6
 
     enum Resource { case cpu, ram }
     var ready: Bool { lastTime > 0 && !useEMA.isEmpty }
@@ -311,7 +311,7 @@ final class AppEnergy {
 
     /// Les apps qui consomment le plus une ressource. CPU : % de tout le processeur, moyenne lissée des dernières mesures
     /// (vide pendant les 2 premières secondes). RAM : lue à la demande, en Go.
-    func top(_ r: Resource, count: Int = 5) -> [Top] {
+    func top(_ r: Resource, count: Int = 6) -> [Top] {
         let me = getpid()
         var apps: [pid_t: NSRunningApplication] = [:]
         for a in NSWorkspace.shared.runningApplications where a.activationPolicy != .prohibited && a.processIdentifier > 0 && a.processIdentifier != me {

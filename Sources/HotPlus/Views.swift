@@ -78,7 +78,7 @@ struct UsageRow: View {
     }
 }
 
-/// Page « Top 5 » qui glisse à la place de la page principale : les apps qui utilisent le plus le CPU ou la RAM, en direct.
+/// Page « Top 6 » qui glisse à la place de la page principale : les apps qui utilisent le plus le CPU ou la RAM, en direct.
 struct TopPage: View {
     @ObservedObject var monitor: Monitor
     let resource: AppEnergy.Resource
@@ -88,10 +88,14 @@ struct TopPage: View {
 
     private func gb(_ v: Double) -> String { "\(v.formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
 
-    private var free: String? {
+    private var headline: (value: String, caption: String)? {
         switch resource {
-        case .cpu: return (monitor.liveCPU ?? monitor.cpu).map { "\(max(0, 100 - $0)) %" }
-        case .ram: return (monitor.liveRAM ?? monitor.ram).map { "\(max(0, $0.totalGB - $0.usedGB).formatted(.number.precision(.fractionLength(1)))) \(s.t(.gigabytes))" }
+        case .cpu:
+            guard let w = monitor.liveWatts else { return nil }
+            return ("\(w.formatted(.number.precision(.fractionLength(0)))) W", s.t(.macPower))
+        case .ram:
+            guard let r = monitor.liveRAM ?? monitor.ram else { return nil }
+            return ("\(r.usedGB.formatted(.number.precision(.fractionLength(1)))) / \(r.totalGB.formatted(.number.precision(.fractionLength(0)))) \(s.t(.gigabytes))", s.t(.usedLabel))
         }
     }
 
@@ -113,7 +117,7 @@ struct TopPage: View {
             }
             .buttonStyle(.plain)
 
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(s.t(resource == .cpu ? .cpu : .ram)).font(.system(size: 28, weight: .semibold, design: .rounded))
                     Text(s.t(.topSubtitle)).font(.caption).foregroundStyle(.secondary)
@@ -124,13 +128,13 @@ struct TopPage: View {
                         Circle().fill(Color.green).frame(width: 6, height: 6).opacity(pulse ? 1 : 0.35)
                         Text(s.t(.live)).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
                     }
-                    // Capacité qui reste : CPU libre en %, RAM disponible en Go.
-                    if let free {
-                        Text(free).font(.system(size: 17, weight: .semibold, design: .rounded)).monospacedDigit()
-                        Text(s.t(.remaining)).font(.caption2).foregroundStyle(.secondary)
+                    // CPU : consommation du Mac en watts. RAM : utilisé / total.
+                    if let big = headline {
+                        Text(big.value).font(.system(size: 17, weight: .semibold, design: .rounded)).monospacedDigit()
+                        Text(big.caption).font(.caption2).foregroundStyle(.secondary)
                     }
                     // Swap du Mac (page RAM) : en orange quand plus de la moitié de la RAM part sur le disque.
-                    if resource == .ram, let sw = monitor.swap, sw.usedGB >= 0.05 {
+                    if resource == .ram, s.showSwap, let sw = monitor.swap, sw.usedGB >= 0.05 {
                         Text(s.t(.swap("\(gb(sw.usedGB))")))
                             .font(.caption2.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(sw.usedGB >= (monitor.ram?.totalGB ?? 16) / 2 ? Color.orange : .secondary)
@@ -138,7 +142,10 @@ struct TopPage: View {
                     }
                 }
             }
+            .frame(height: 84, alignment: .top)
 
+            // Zone de liste de hauteur fixe (5 lignes) : la bulle ne change pas de taille quand les valeurs se rafraîchissent.
+            Group {
             if monitor.tops.isEmpty {
                 HStack(spacing: 8) {
                     if !monitor.topReady { ProgressView().controlSize(.small) }
@@ -153,6 +160,8 @@ struct TopPage: View {
                     }
                 }
             }
+            }
+            .frame(height: 232, alignment: .top)
 
             Spacer(minLength: 0)
             Text(s.t(resource == .cpu ? .cpuCaption : .ramCaption)).font(.caption2).foregroundStyle(.tertiary)
@@ -163,7 +172,7 @@ struct TopPage: View {
     }
 }
 
-/// Une app du Top 5 : icône, nom, barre relative au premier, valeur (pas d'action au clic pour l'instant).
+/// Une app du Top 6 : icône, nom, barre relative au premier, valeur (pas d'action au clic pour l'instant).
 struct TopRow: View {
     let top: AppEnergy.Top
     let value: String
@@ -261,7 +270,7 @@ struct PopoverView: View {
             }
         }
         .frame(width: 300)
-        .clipped()
+                .clipped()
     }
 
     private var main: some View {
@@ -296,7 +305,7 @@ struct PopoverView: View {
                 UsageRow(label: s.t(.ram), percent: monitor.ram?.percent,
                          detail: monitor.ram.map { String(format: "%.1f / %.0f GB", $0.usedGB, $0.totalGB) }) { open(.ram) }
                 UsageRow(label: s.t(.gpu), percent: monitor.gpu)
-                if let hog = monitor.hog {
+                if let hog = monitor.hog, monitor.topPage == nil {
                     HogNote(hog: hog, text: s.t(hog.tool.map { .appHogTool($0, hog.name) } ?? .appHog(hog.name)), lang: s.lang)
                         .transition(.opacity)
                 }
@@ -338,6 +347,7 @@ struct SettingsView: View {
                 Picker(s.t(.interval), selection: $s.interval) {
                     ForEach([1, 3, 5, 10], id: \.self) { Text(L.seconds($0).text(s.lang)).tag($0) }
                 }.pickerStyle(.segmented)
+                Toggle(s.t(.showSwap), isOn: $s.showSwap)
             }
             Section(s.t(.sectionGeneral)) {
                 Picker(s.t(.language), selection: $s.language) {

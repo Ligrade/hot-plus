@@ -11,6 +11,7 @@ final class Monitor: ObservableObject {
     @Published private(set) var hog: AppEnergy.Hog?
     /// Charge CPU globale, popover ouvert : même cadence (2 s) et même lissage que le CPU des apps, pour que « restant » colle au Top 5.
     @Published private(set) var liveCPU: Int?
+    @Published private(set) var liveWatts: Double?
     @Published private(set) var liveRAM: (percent: Int, usedGB: Double, totalGB: Double)?
     /// Page « Top 5 » affichée dans le popover (nil : page principale). Les valeurs se mettent à jour toutes les 2 s.
     @Published var topPage: AppEnergy.Resource? { didSet { if topPage != oldValue { tops = []; refreshTop() } } }
@@ -33,7 +34,7 @@ final class Monitor: ObservableObject {
             energy.reset()
             hog = nil
             topPage = nil
-            liveCPU = nil; liveEMA = nil; liveRAM = nil
+            liveCPU = nil; liveEMA = nil; liveRAM = nil; liveWatts = nil
             guard watchApps else { return }
             _ = energy.read() // première mesure, la suivante donne l'écart
             _ = liveUsage.read()
@@ -58,6 +59,7 @@ final class Monitor: ObservableObject {
             liveEMA = e; liveCPU = Int(e.rounded())
         }
         liveRAM = RAMUsage.read()
+        liveWatts = SystemPower.read()
         let h = energy.read()
         hog = h // valeurs mises à jour toutes les 2 s
         refreshTop()

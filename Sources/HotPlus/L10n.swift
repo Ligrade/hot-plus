@@ -16,7 +16,7 @@ enum L {
     case tipPNominal, tipPFair, tipPSerious, tipPCritical
     case usage, cpu, gpu, ram
     case appHog(String), appHogTool(String, String), gigabytes
-    case topSubtitle, live, remaining, swap(String), measuring, nothingToShow, cpuCaption, ramCaption
+    case topSubtitle, live, remaining, macPower, usedLabel, showSwap, swap(String), measuring, nothingToShow, cpuCaption, ramCaption
     case sectionDisplay, sectionGeneral, sourceHint
 
     func text(_ l: String) -> String {
@@ -69,9 +69,12 @@ enum L {
         case .tipPSerious: return fr ? "Performances réduites pour refroidir." : "Performance reduced to cool down."
         case .tipPCritical: return fr ? "Ralentissement maximal du Mac." : "Maximum slowdown in effect."
         case .usage: return fr ? "Utilisation" : "Usage"
-        case .topSubtitle: return fr ? "Les 5 apps qui en utilisent le plus" : "The 5 apps using the most"
+        case .topSubtitle: return fr ? "Les 6 apps qui en utilisent le plus" : "The 6 apps using the most"
         case .live: return fr ? "En direct" : "Live"
-        case .remaining: return fr ? "restant" : "left"
+        case .remaining: return fr ? "restants" : "left"
+        case .showSwap: return fr ? "Afficher le swap (page RAM)" : "Show swap (RAM page)"
+        case .usedLabel: return fr ? "utilisés" : "used"
+        case .macPower: return fr ? "consommation du Mac" : "Mac power draw"
         case .swap(let v): return fr ? "Swap : \(v)" : "Swap: \(v)"
         case .cpuCaption: return fr ? "En % de tout le processeur, mis à jour toutes les 2 s." : "As % of the whole processor, updated every 2 s."
         case .ramCaption: return fr ? "Mémoire de chaque app et de ses processus, mise à jour toutes les 2 s. Le swap est sur le SSD interne." : "Memory of each app and its processes, updated every 2 s. Swap lives on the internal SSD."

@@ -6,7 +6,7 @@ enum TempUnit: String, CaseIterable { case celsius, fahrenheit }
 enum BarStyle: String, CaseIterable { case iconAndTemp, tempOnly, iconOnly }
 enum AppLanguage: String, CaseIterable { case system, en, fr }
 
-let appVersion = "1.1.2"
+let appVersion = "1.2"
 let repoURL = URL(string: "https://github.com/Ligrade/hot-plus")!
 
 final class Settings: ObservableObject {
@@ -17,6 +17,7 @@ final class Settings: ObservableObject {
     @Published var barStyle: BarStyle { didSet { d.set(barStyle.rawValue, forKey: "barStyle") } }
     @Published var interval: Int { didSet { d.set(interval, forKey: "interval") } }
     @Published var language: AppLanguage { didSet { d.set(language.rawValue, forKey: "language") } }
+    @Published var showSwap: Bool { didSet { d.set(showSwap, forKey: "showSwap") } } // désactivé par défaut
     @Published var launchAtLogin: Bool
     @Published var loginMessage: L?
 
@@ -26,6 +27,7 @@ final class Settings: ObservableObject {
         let i = d.integer(forKey: "interval")
         interval = [1, 3, 5, 10].contains(i) ? i : 3
         language = AppLanguage(rawValue: d.string(forKey: "language") ?? "") ?? .system
+        showSwap = d.bool(forKey: "showSwap")
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
